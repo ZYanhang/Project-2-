@@ -1,0 +1,55 @@
+# Load necessary libraries
+library(data.table)
+library(dplyr)
+library(ggplot2)
+
+# Load the data
+storm_data <- fread("stormdata.csv.bz2")
+
+# Data Processing
+## Convert relevant columns to proper data types
+storm_data$BGN_DATE <- as.Date(storm_data$BGN_DATE, format="%m/%d/%Y %H:%M:%S")
+storm_data <- storm_data %>%
+  mutate(EVTYPE = as.factor(EVTYPE),
+         FATALITIES = as.numeric(FATALITIES),
+         INJURIES = as.numeric(INJURIES),
+         PROPDMG = as.numeric(PROPDMG),
+         CROPDMG = as.numeric(CROPDMG))
+
+# Question 1: Events most harmful to population health
+## Summarize total fatalities and injuries by event type
+health_impact <- storm_data %>%
+  group_by(EVTYPE) %>%
+  summarize(Total_Fatalities = sum(FATALITIES, na.rm = TRUE),
+            Total_Injuries = sum(INJURIES, na.rm = TRUE)) %>%
+  arrange(desc(Total_Fatalities), desc(Total_Injuries))
+
+## Top 10 events by health impact
+top_health_impact <- health_impact %>% top_n(10, Total_Fatalities + Total_Injuries)
+
+# Plot the results
+ggplot(top_health_impact, aes(x = reorder(EVTYPE, -(Total_Fatalities + Total_Injuries)), y = Total_Fatalities + Total_Injuries)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Top 10 Most Harmful Events to Population Health",
+       x = "Event Type", y = "Total Fatalities and Injuries") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Question 2: Events with greatest economic consequences
+## Summarize total property and crop damage by event type
+economic_impact <- storm_data %>%
+  group_by(EVTYPE) %>%
+  summarize(Total_Property_Damage = sum(PROPDMG, na.rm = TRUE),
+            Total_Crop_Damage = sum(CROPDMG, na.rm = TRUE)) %>%
+  arrange(desc(Total_Property_Damage + Total_Crop_Damage))
+
+## Top 10 events by economic impact
+top_economic_impact <- economic_impact %>% top_n(10, Total_Property_Damage + Total_Crop_Damage)
+
+# Plot the results
+ggplot(top_economic_impact, aes(x = reorder(EVTYPE, -(Total_Property_Damage + Total_Crop_Damage)), y = Total_Property_Damage + Total_Crop_Damage)) +
+  geom_bar(stat = "identity", fill = "darkred") +
+  labs(title = "Top 10 Events with Greatest Economic Consequences",
+       x = "Event Type", y = "Total Economic Damage (in dollars)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Results
