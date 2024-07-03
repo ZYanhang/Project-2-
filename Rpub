@@ -1,0 +1,99 @@
+the basic goal of this assignment is to explore the NOAA Storm Database and answer some basic questions about severe weather events.
+
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+NOAA <- read.csv('repdata-data-StormData.csv')
+1- Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+Data Processing
+observation_num <- 10
+most_harmful_EVTYPE <- NOAA %>% 
+  select('STATE__', 'STATE', 'BGN_DATE', 'EVTYPE', "LENGTH", "WIDTH", "F", "MAG", 
+         "FATALITIES", "INJURIES") %>% 
+  arrange(desc(FATALITIES), desc(INJURIES)) %>%
+  select('STATE', 'EVTYPE', 'FATALITIES', 'INJURIES') %>%
+  head(observation_num) %>%
+  unique()
+
+# Create the FATALITIES plot
+p1 <- ggplot(most_harmful_EVTYPE, aes(x = reorder(STATE, FATALITIES), y = FATALITIES)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Fatalities by State", x = "State", y = "Fatalities") +
+  theme_minimal()
+
+# Create the INJURIES plot
+p2 <- ggplot(most_harmful_EVTYPE, aes(x = reorder(STATE, INJURIES), y = INJURIES)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Injuries by State", x = "State", y = "Injuries") +
+  theme_minimal()
+
+
+
+# Create the FATALITIES plot for EVTYPE
+p3 <- ggplot(most_harmful_EVTYPE, aes(x = reorder(EVTYPE, FATALITIES), y = FATALITIES)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Fatalities by EVTYPE", x = "EVTYPE", y = "Fatalities") +
+  theme_minimal()
+
+# Create the INJURIES plot for EVTYPE
+p4 <- ggplot(most_harmful_EVTYPE, aes(x = reorder(EVTYPE, INJURIES), y = INJURIES)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Injuries by EVTYPE", x = "EVTYPE", y = "Injuries") +
+  theme_minimal()
+Results
+Considering we take the top 10 observations from the NOAA dataset. We can see that across the United States, the types of events that are most harmful with respect to population health are :
+
+HEAT, TORNADO, EXCESSIVE HEAT
+the States that have the most Fatalities/Injuries
+# Arrange the plots side by side
+grid.arrange(p1, p2, ncol = 2)
+
+
+the types of events that have the most Fatalities/Injuries
+# Arrange the plots side by side
+grid.arrange(p3, p4, ncol = 2)
+
+
+Explaination:
+HEAT : A period of heat resulting from the combination of high temperatures (above normal) and relative humidity. A Heat event occurs and is reported in Storm Data whenever heat index values meet or exceed locally/regionally established advisory thresholds. Fatalities or major impacts on human health occurring when ambient weather conditions meet heat advisory criteria are reported using the Heat category. If the ambient weather conditions are below heat advisory criteria, a Heat event entry is permissible only if a directly-related fatality occurred due to unseasonably warm weather, and not man-made environments.
+
+TORNADO : Excessive Heat results from a combination of high temperatures (well above normal) and high humidity. An Excessive Heat event occurs and is reported in Storm Data whenever heat index values meet or exceed locally/regionally established excessive heat warning thresholds, on a widespread or localized basis. Fatalities (directly-related) or major impacts to human health occurring during excessive heat warning conditions are reported using this event category.
+
+TORNADO : A violently rotating column of air, extending to or from a cumuliform cloud or underneath a cumuliform cloud, to the ground, and often (but not always) visible as a condensation funnel. Literally, in order for a vortex to be classified as a tornado, it must be in contact with the ground and extend to/from the cloud base, and there should be some semblance of ground-based visual effects such as dust/dirt rotational markings/swirls, or structural or vegetative damage or disturbance.
+
+2- Across the United States, which types of events have the greatest economic consequences?
+Data Processing
+high_damage_NOAA <- NOAA %>%  filter( PROPDMGEXP %in% c("K", "M", "B"), CROPDMGEXP %in% c("K", "M", "B"))
+
+# Create a custom sorting key
+high_damage_NOAA <- high_damage_NOAA %>%
+  mutate(sort_key_1 = case_when(
+    PROPDMGEXP == "B" ~ 1000000000,
+    PROPDMGEXP == "M" ~ 1000000,
+    PROPDMGEXP == "K" ~ 1000,
+    TRUE ~ 10
+  ))
+
+high_damage_NOAA <- high_damage_NOAA %>%
+  mutate(sort_key_2 = case_when(
+    CROPDMGEXP == "B" ~ 1000000000,
+    CROPDMGEXP == "M" ~ 1000000,
+    CROPDMGEXP == "K" ~ 1000,
+    TRUE ~ 10
+  ))
+
+# Arrange the dataset based on the custom sorting key
+high_economic_consequences_EVTYPE <- high_damage_NOAA %>%
+  arrange(desc(sort_key_1), desc(PROPDMG), desc(sort_key_2), desc(CROPDMGEXP)) %>%
+  select(-sort_key_1, -sort_key_2) %>% # Remove the sort_key column if not needed
+  select('EVTYPE') %>%
+  head(observation_num) %>%
+  unique()
+Results
+Considering we take the top 10 observations from the NOAA dataset. We can see that across the United States, the types of events that have the greatest economic consequences are :
+
+FLOOD, HURRICANE/TYPHOON, RIVER FLOOD, STORM SURGE/TIDE, HURRICANE, TORNADO
